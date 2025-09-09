@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Entrada de Produtos - Logística OZT</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+    }
+
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #199E80;
+      color: white;
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      gap: 10px;
+    }
+    header h2 { margin: 0; flex: 1; }
+    header .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    header .actions button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+      color: white;
+    }
+    .btn-add { background-color:#16a34a; }
+    .btn-edit { background-color:#0ea5e9; }
+    .btn-delete { background-color:#b91c1c; }
+    .btn-clear { background-color:#2563eb; }
+    .btn-sair { background-color:#dc2626; }
+    header .actions button:hover { opacity: 0.9; }
+
+    .container { padding: 15px; }
+
+    #formGroup {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      background: #ecfdf5;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      align-items: end;
+    }
+    .form-item { display: flex; flex-direction: column; }
+    .form-item label {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 3px;
+      color: #374151;
+    }
+    .form-item input, .form-item select {
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+    }
+    .form-item input[readonly] { background: #f3f4f6; }
+
+    #entradaCodigo { max-width: 90px; }
+    #entradaUnidade { max-width: 80px; }
+    #entradaLocacao { max-width: 80px; }
+    #entradaEstoqueMinimo { max-width: 100px; }
+    #entradaQuantidade { max-width: 110px; }
+    #entradaData { max-width: 130px; }
+
+    #searchGroup {
+      background: #d1fae5;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    #searchGroup input { flex: 1; min-width: 200px; padding: 6px; border-radius: 6px; border: 1px solid #ccc; }
+    #searchGroup button { padding: 6px 10px; border: none; border-radius: 6px; font-weight: bold; background: #16a34a; cursor: pointer; color:white; }
+    #searchGroup button:hover { opacity: 0.9; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-size: 13px;
+    }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; word-wrap: break-word; }
+    th { background-color: #166534; color: white; }
+    tr:hover { background: #f0fdf4; cursor: pointer; }
+
+    th:nth-child(1), td:nth-child(1) { width: 80px; }
+    th:nth-child(2), td:nth-child(2) { width: 30%; }
+    th:nth-child(3), td:nth-child(3) { width: 90px; }
+    th:nth-child(4), td:nth-child(4) { width: 70px; }
+    th:nth-child(5), td:nth-child(5) { width: 120px; }
+    th:nth-child(6), td:nth-child(6) { width: 90px; }
+    th:nth-child(7), td:nth-child(7) { width: 110px; }
+    th:nth-child(8), td:nth-child(8) { width: 80px; }
+
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; }
+      header h2 { margin-bottom: 8px; }
+      .actions { width: 100%; justify-content: flex-start; }
+      #formGroup { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      #formGroup { grid-template-columns: 1fr; }
+      #searchGroup { flex-direction: column; align-items: stretch; }
+      #searchGroup input, #searchGroup button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h2>Entrada de Produtos</h2>
+  <div class="actions">
+    <button class="btn-add" id="btnEntradaAdd">Adicionar</button>
+    <button class="btn-edit" id="btnEntradaEdit">Editar</button>
+    <button class="btn-delete" id="btnEntradaDelete">Excluir</button>
+    <button class="btn-clear" id="btnEntradaClear">Limpar</button>
+    <button class="btn-sair" onclick="sairParaIndex()">Sair</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="formGroup">
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Código:</label>
+      <input type="text" id="entradaCodigo" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 4;">
+      <label>Descrição:</label>
+      <select id="entradaDescricao" onchange="preencherDadosProduto()">
+        <option value="">Selecione um produto</option>
+      </select>
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Quantidade:</label>
+      <input type="number" id="entradaQuantidade" min="0" step="any">
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Unidade:</label>
+      <input type="text" id="entradaUnidade" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 2;">
+      <label>Categoria:</label>
+      <input type="text" id="entradaCategoria" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Estoque Mínimo:</label>
+      <input type="number" id="entradaEstoqueMinimo" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Data Entrada:</label>
+      <input type="date" id="entradaData">
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Locação:</label>
+      <input type="text" id="entradaLocacao">
+    </div>
+  </div>
+
+  <div id="searchGroup">
+    <label>Pesquisar:</label>
+    <input type="text" id="entradaSearchInput" placeholder="Digite parte da descrição">
+    <button onclick="pesquisarEntrada()">Pesquisar</button>
+    <button onclick="mostrarTodasEntradas()">Mostrar Todas</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descrição</th>
+        <th>Qtd</th>
+        <th>Unid</th>
+        <th>Categoria</th>
+        <th>Est. Min</th>
+        <th>Data</th>
+        <th>Locação</th>
+      </tr>
+    </thead>
+    <tbody id="entradaTabelaCorpo"></tbody>
+  </table>
+</div>
+
+<script>
+let entradas = JSON.parse(localStorage.getItem("entradas")) || [];
+let modoEdicao = false;
+let editIndex = null;
+document.getElementById("entradaData").valueAsDate = new Date();
+
+function getProdutos(){ return JSON.parse(localStorage.getItem("produtos")) || []; }
+function findProdutoByCodigo(codigo){ return getProdutos().find(p => p.codigo === codigo); }
+
+function carregarProdutos(){
+  const select = document.getElementById("entradaDescricao");
+  const produtos = getProdutos();
+  select.innerHTML = '<option value="">Selecione um produto</option>';
+  produtos.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.codigo;
+    opt.textContent = `${p.descricao} (${p.codigo})`;
+    select.appendChild(opt);
+  });
+}
+function preencherDadosProduto(){
+  const codigo = document.getElementById("entradaDescricao").value;
+  const produto = findProdutoByCodigo(codigo);
+  document.getElementById("entradaCodigo").value = produto?.codigo || "";
+  document.getElementById("entradaUnidade").value = produto?.unidade || "";
+  document.getElementById("entradaCategoria").value = produto?.categoria || "";
+  document.getElementById("entradaEstoqueMinimo").value = produto?.estoqueMinimo ?? 0;
+}
+
+function atualizarTabela(lista=null){
+  const tbody=document.getElementById("entradaTabelaCorpo");
+  tbody.innerHTML="";
+  (lista||entradas).forEach((p,i)=>{
+    const produtoAtual=findProdutoByCodigo(p.codigo);
+    const estoqueMin=produtoAtual?.estoqueMinimo ?? p.estoqueMinimo ?? 0;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${p.codigo}</td>
+      <td>${p.descricao}</td>
+      <td>${Number(p.quantidade).toLocaleString("pt-BR")}</td>
+      <td>${p.unidade}</td>
+      <td>${p.categoria}</td>
+      <td>${Number(estoqueMin).toLocaleString("pt-BR")}</td>
+      <td>${p.data}</td>
+      <td>${p.locacao||""}</td>`;
+    tr.onclick=()=>preencherCampos(i);
+    tbody.appendChild(tr);
+  });
+}
+function salvarLocalStorage(){ localStorage.setItem("entradas",JSON.stringify(entradas)); }
+
+function limparCampos(){
+  document.querySelectorAll("#formGroup input, #formGroup select").forEach(e=>e.value="");
+  document.getElementById("entradaData").valueAsDate=new Date();
+  modoEdicao=false; editIndex=null;
+}
+function adicionarEntrada(){
+  const select=document.getElementById("entradaDescricao");
+  const codigo=document.getElementById("entradaCodigo").value.trim();
+  const descricao=select.options[select.selectedIndex]?.text.split(" (")[0]||"";
+  const quantidade=parseFloat(document.getElementById("entradaQuantidade").value) || 0;
+  const unidade=document.getElementById("entradaUnidade").value;
+  const categoria=document.getElementById("entradaCategoria").value;
+  const estoqueMinimo=parseFloat(document.getElementById("entradaEstoqueMinimo").value) || 0;
+  const data=document.getElementById("entradaData").value;
+  const locacao=document.getElementById("entradaLocacao").value;
+  if(!codigo||!descricao||quantidade<=0){alert("Preencha todos os campos corretamente!");return;}
+  const registro={codigo,descricao,quantidade,unidade,categoria,estoqueMinimo,data,locacao};
+  if(modoEdicao){ entradas[editIndex]=registro; }
+  else{ entradas.push(registro); }
+  salvarLocalStorage(); atualizarTabela(); limparCampos();
+}
+function preencherCampos(i){
+  const p=entradas[i]; editIndex=i; modoEdicao=true;
+  document.getElementById("entradaDescricao").value=p.codigo;
+  preencherDadosProduto();
+  document.getElementById("entradaQuantidade").value=Number(p.quantidade);
+  document.getElementById("entradaEstoqueMinimo").value=Number(p.estoqueMinimo || 0);
+  document.getElementById("entradaData").value=p.data;
+  document.getElementById("entradaLocacao").value=p.locacao||"";
+}
+function excluirEntrada(){
+  if(editIndex===null){alert("Selecione uma entrada!");return;}
+  if(confirm("Excluir entrada?")){ entradas.splice(editIndex,1); salvarLocalStorage(); atualizarTabela(); limparCampos(); }
+}
+
+function pesquisarEntrada() {
+  const termo = document.getElementById("entradaSearchInput").value.toLowerCase();
+  const filtrados = entradas.filter(p => p.descricao.toLowerCase().includes(termo));
+  atualizarTabela(filtrados);
+}
+function mostrarTodasEntradas() {
+  atualizarTabela();
+}
+
+function sairParaIndex(){
+  window.location.href = "index.html";
+}
+
+carregarProdutos();
+atualizarTabela();
+
+document.getElementById("btnEntradaAdd").onclick = adicionarEntrada;
+document.getElementById("btnEntradaEdit").onclick = adicionarEntrada;
+document.getElementById("btnEntradaDelete").onclick = excluirEntrada;
+document.getElementById("btnEntradaClear").onclick = limparCampos;
+</script>
+</body>
+</html>

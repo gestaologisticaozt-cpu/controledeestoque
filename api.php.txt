@@ -1,0 +1,104 @@
+<?php
+// Configurações do banco de dados
+$host = "localhost";   // se estiver em hospedagem, pode ser diferente (ex: mysql.hostinger.com)
+$user = "root";        // usuário do MySQL (no XAMPP é "root")
+$pass = "";            // senha do MySQL (no XAMPP padrão é vazio "")
+$db   = "logistica";   // nome do banco criado
+
+header("Content-Type: application/json");
+
+// Conectar ao banco
+$conn = new mysqli($host, $user, $pass, $db);
+if ($conn->connect_error) {
+    die(json_encode(["status" => "erro", "mensagem" => "Falha na conexão: " . $conn->connect_error]));
+}
+
+// Verifica qual ação foi chamada
+$acao = $_GET['acao'] ?? '';
+
+// ------------------- CADASTRAR PRODUTO -------------------
+if ($acao === "cadastrar_produto") {
+    $nome = $_POST['nome'];
+    $categoria = $_POST['categoria'];
+    $descricao = $_POST['descricao'];
+    $preco = $_POST['preco'];
+    $quantidade = $_POST['quantidade'];
+
+    $sql = "INSERT INTO produtos (nome, categoria, descricao, preco, quantidade) 
+            VALUES ('$nome', '$categoria', '$descricao', '$preco', '$quantidade')";
+    
+    if ($conn->query($sql) === TRUE) {
+        echo json_encode(["status" => "sucesso", "mensagem" => "Produto cadastrado com sucesso!"]);
+    } else {
+        echo json_encode(["status" => "erro", "mensagem" => $conn->error]);
+    }
+}
+
+// ------------------- LISTAR PRODUTOS -------------------
+elseif ($acao === "listar_produtos") {
+    $result = $conn->query("SELECT * FROM produtos");
+    $produtos = [];
+    while ($row = $result->fetch_assoc()) {
+        $produtos[] = $row;
+    }
+    echo json_encode($produtos);
+}
+
+// ------------------- REGISTRAR ENTRADA -------------------
+elseif ($acao === "entrada_produto") {
+    $produto_id = $_POST['produto_id'];
+    $quantidade = $_POST['quantidade'];
+
+    $conn->query("INSERT INTO entradas (produto_id, quantidade) VALUES ('$produto_id', '$quantidade')");
+    $conn->query("UPDATE produtos SET quantidade = quantidade + $quantidade WHERE id = $produto_id");
+
+    echo json_encode(["status" => "sucesso", "mensagem" => "Entrada registrada com sucesso!"]);
+}
+
+// ------------------- REGISTRAR SAÍDA -------------------
+elseif ($acao === "saida_produto") {
+    $produto_id = $_POST['produto_id'];
+    $quantidade = $_POST['quantidade'];
+
+    $conn->query("INSERT INTO saidas (produto_id, quantidade) VALUES ('$produto_id', '$quantidade')");
+    $conn->query("UPDATE produtos SET quantidade = quantidade - $quantidade WHERE id = $produto_id");
+
+    echo json_encode(["status" => "sucesso", "mensagem" => "Saída registrada com sucesso!"]);
+}
+
+// ------------------- CONSULTAR ESTOQUE -------------------
+elseif ($acao === "estoque") {
+    $result = $conn->query("SELECT id, nome, quantidade FROM produtos");
+    $estoque = [];
+    while ($row = $result->fetch_assoc()) {
+        $estoque[] = $row;
+    }
+    echo json_encode($estoque);
+}
+
+// ------------------- RELATÓRIO -------------------
+elseif ($acao === "relatorio") {
+    $relatorio = [];
+
+    $entradas = $conn->query("SELECT e.id, p.nome, e.quantidade, e.data_entrada 
+                              FROM entradas e JOIN produtos p ON e.produto_id = p.id");
+    while ($row = $entradas->fetch_assoc()) {
+        $relatorio["entradas"][] = $row;
+    }
+
+    $saidas = $conn->query("SELECT s.id, p.nome, s.quantidade, s.data_saida 
+                            FROM saidas s JOIN produtos p ON s.produto_id = p.id");
+    while ($row = $saidas->fetch_assoc()) {
+        $relatorio["saidas"][] = $row;
+    }
+
+    echo json_encode($relatorio);
+}
+
+// Caso a ação não seja reconhecida
+else {
+    echo json_encode(["status" => "erro", "mensagem" => "Ação inválida"]);
+}
+
+$conn->close();
+?>

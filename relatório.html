@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RELATÓRIO DE ESTOQUE</title>
+  <style>
+    :root {
+      --bg: #199E80;
+      --ink: #0f172a;
+      --muted: #475569;
+      --line: #e2e8f0;
+      --brand: #0ea5e9;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+
+    .toolbar {
+      position: sticky; top: 0; z-index: 3;
+      display: flex; gap: .5rem; align-items: center; justify-content: space-between;
+      padding: .75rem 1rem; background: rgba(255,255,255,.9); backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--line);
+    }
+    .toolbar-left { display:flex; gap:.5rem; align-items:center; }
+    .btn {
+      border: 1px solid var(--line); background: #fff; padding: .55rem .9rem; border-radius: .65rem;
+      cursor: pointer; font-weight: 600; transition: transform .02s ease, background .2s ease;
+    }
+    .btn:hover { background: #f8fafc; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { border-color: var(--brand); color: #199E80; }
+
+    /* Botão sair vermelho maior */
+    .btn.sair {
+      border-color: #dc2626;
+      background: #ef4444;
+      color: #fff;
+      font-size: 1rem;
+      padding: 0.7rem 1.2rem;
+    }
+    .btn.sair:hover {
+      background: #dc2626;
+    }
+
+    .page {
+      max-width: 1000px; margin: 1rem auto 4rem auto; padding: 0 1rem;
+    }
+
+    header.report-header {
+      text-align: center; margin-top: 1.2rem; margin-bottom: .8rem;
+    }
+    header.report-header h1 {
+      margin: 0 0 .25rem 0; font-size: 1.4rem; letter-spacing: .08em; font-weight: 800;
+    }
+    header .meta { color: var(--muted); font-size: .9rem; }
+
+    table {
+      width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line);
+    }
+    thead th {
+      background: #199E80; color: #fff; text-align: left; font-weight: 700; padding: .6rem .6rem;
+    }
+    tbody td { padding: .55rem .6rem; border-top: 1px solid var(--line); }
+    tbody tr:nth-child(odd) td { background: #f8fafc; }
+    tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+    .filters { display:flex; gap:.5rem; flex-wrap: wrap; margin: .75rem 0 1rem 0; }
+    .input { border:1px solid var(--line); border-radius:.6rem; padding:.55rem .7rem; }
+    .input[type="search"] { min-width: 260px; }
+    .select { padding-right: 2rem; }
+
+    footer.report-footer {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 28px; z-index: 2;
+      display:flex; align-items:center; justify-content: space-between;
+      padding: 0 .8rem; background: #fff; border-top: 1px solid var(--line);
+      font-size: .85rem; color: var(--muted);
+    }
+    .page-number::after { content: counter(page) " / " counter(pages); }
+
+    @media print {
+      .toolbar, .filters { display: none !important; }
+      body { margin: 0; }
+      .page { margin: 0 auto; padding: 0 14mm; }
+      header.report-header { margin-top: 10mm; }
+      thead th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      footer.report-footer { position: fixed; }
+      @page { size: A4 portrait; margin: 12mm 10mm 18mm 10mm; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <button class="btn primary" onclick="window.print()">Imprimir</button>
+      <button class="btn" id="exportCsv">Exportar CSV</button>
+      <!-- Botão sair corrigido -->
+      <button class="btn sair" onclick="window.close()">Sair</button>
+    </div>
+    <small style="color:var(--muted)">Interface HTML pronta para impressão</small>
+  </div>
+
+  <div class="page">
+    <header class="report-header">
+      <h1>RELATÓRIO DE ESTOQUE</h1>
+      <div class="meta">
+        <span id="emitidoEm"></span>
+      </div>
+    </header>
+
+    <section class="filters">
+      <input id="search" class="input" type="search" placeholder="Buscar por código ou descrição…" />
+      <select id="categoria" class="input select">
+        <option value="">Todas as categorias</option>
+      </select>
+    </section>
+
+    <table id="tabela">
+      <thead>
+        <tr>
+          <th style="width: 110px">Código</th>
+          <th>Descrição</th>
+          <th style="width: 110px">Unidade</th>
+          <th style="width: 180px">Categoria</th>
+          <th style="width: 150px; text-align:right">Saldo do Estoque</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <footer class="report-footer">
+    <span id="rodapeData">Emitido em: —</span>
+    <span>Página <span class="page-number"></span></span>
+  </footer>
+
+  <script>
+    // === Carrega dados do localStorage do controle.estoque ===
+    const entradas = JSON.parse(localStorage.getItem("entradas")) || [];
+    const saidas = JSON.parse(localStorage.getItem("saidas")) || [];
+    const produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+
+    let dados = [];
+
+    function consolidarDados(){
+      const estoque = {};
+
+      // Somar entradas
+      entradas.forEach(e => {
+        if(!estoque[e.codigo]){
+          estoque[e.codigo] = {
+            codigo: e.codigo,
+            descricao: e.descricao,
+            unidade: e.unidade,
+            categoria: e.categoria,
+            saldo: 0
+          };
+        }
+        estoque[e.codigo].saldo += parseFloat(e.quantidade) || 0;
+      });
+
+      // Subtrair saídas
+      saidas.forEach(s => {
+        if(!estoque[s.codigo]){
+          estoque[s.codigo] = {
+            codigo: s.codigo,
+            descricao: s.descricao,
+            unidade: s.unidade,
+            categoria: s.categoria,
+            saldo: 0
+          };
+        }
+        estoque[s.codigo].saldo -= parseFloat(s.quantidade) || 0;
+      });
+
+      // Garantir que todos os produtos cadastrados apareçam
+      produtos.forEach(p => {
+        if(!estoque[p.codigo]){
+          estoque[p.codigo] = {
+            codigo: p.codigo,
+            descricao: p.descricao,
+            unidade: p.unidade,
+            categoria: p.categoria,
+            saldo: 0
+          };
+        }
+      });
+
+      dados = Object.values(estoque);
+    }
+
+    const formatDateTime = (d = new Date()) => new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short', timeStyle: 'short'
+    }).format(d);
+
+    const tbody = document.querySelector('#tabela tbody');
+    const search = document.getElementById('search');
+    const selectCategoria = document.getElementById('categoria');
+
+    const renderTabela = (rows) => {
+      tbody.innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.codigo}</td>
+          <td>${r.descricao}</td>
+          <td>${r.unidade}</td>
+          <td>${r.categoria}</td>
+          <td class="num">${r.saldo}</td>
+        </tr>`).join('');
+    };
+
+    const preencherCategorias = (rows) => {
+      const categorias = Array.from(new Set(rows.map(r => r.categoria))).sort();
+      categorias.forEach(c => {
+        if (!c) return;
+        const opt = document.createElement('option');
+        opt.value = c; opt.textContent = c; selectCategoria.appendChild(opt);
+      });
+    };
+
+    const filtrar = () => {
+      const termo = search.value.trim().toLowerCase();
+      const cat = selectCategoria.value;
+      const filtrados = dados.filter(r => {
+        const texto = `${r.codigo} ${r.descricao}`.toLowerCase();
+        const okBusca = !termo || texto.includes(termo);
+        const okCat = !cat || r.categoria === cat;
+        return okBusca && okCat;
+      });
+      renderTabela(filtrados);
+    };
+
+    document.getElementById('exportCsv').addEventListener('click', () => {
+      const linhas = [["Código","Descrição","Unidade","Categoria","Saldo do Estoque"], ...dados.map(r => [r.codigo,r.descricao,r.unidade,r.categoria,r.saldo])];
+      const csv = linhas.map(l => l.map(v => `"${String(v).replaceAll('"','""')}"`).join(';')).join('\n');
+      const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: 'relatorio_estoque.csv' });
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    // Inicialização
+    consolidarDados();
+    document.getElementById('emitidoEm').textContent = `Emitido em: ${formatDateTime()}`;
+    document.getElementById('rodapeData').textContent = `Emitido em: ${formatDateTime()}`;
+    preencherCategorias(dados);
+    renderTabela(dados);
+
+    search.addEventListener('input', filtrar);
+    selectCategoria.addEventListener('change', filtrar);
+  </script>
+</body>
+</html>

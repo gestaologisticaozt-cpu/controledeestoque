@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Painel de Controle - Logística OZT</title>
+<style>
+  html, body {
+    margin:0;
+    height:100%;
+    font-family: Arial, sans-serif;
+    background-color:#f8fafc;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Menu */
+  .menu { 
+    background-color:#199E80; 
+    height:60px; 
+    display:flex; 
+    align-items:center; 
+    padding:0 10px; 
+  }
+  .menu button { 
+    margin:0 5px; 
+    padding:10px 20px; 
+    font-size:14px; 
+    font-weight:bold; 
+    border:none; 
+    border-radius:6px; 
+    cursor:pointer; 
+    color:white; 
+    transition:0.2s; 
+  }
+  .menu button:hover { opacity:0.9; transform:scale(1.05); }
+  .btn-cadastro { background-color:#10b981; }
+  .btn-entrada { background-color:#3b82f6; }
+  .btn-saida { background-color:#f59e0b; }
+  .btn-controle { background-color:#8b5cf6; }
+
+  /* Hero */
+  .hero { 
+    flex: 1;
+    position: relative;
+    display:flex;
+    justify-content:center;
+    align-items:flex-end; /* alinha ao footer */
+    overflow: hidden;
+  }
+
+  /* Imagem de fundo */
+  .hero img.fundo {
+    height: 100%;       /* altura total do hero */
+    width: auto;         /* mantém proporção horizontal */
+    max-width: 100%;     /* largura máxima não ultrapassa hero */
+    position: absolute;
+    bottom: 0;           /* alinha ao footer */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 0;
+  }
+
+  /* GIF à esquerda */
+  .gif-esquerda {
+    position: absolute;
+    top: 10px;
+    left: 20px;
+    z-index: 10;
+  }
+  .gif-esquerda img {
+    width: 12vw;
+    max-width: 120px;
+    height: auto;
+  }
+
+  /* Footer */
+  footer { 
+    height:25px;              
+    display:flex; 
+    align-items:center; 
+    justify-content:center; 
+    font-size:14px; 
+    color:#334155; 
+    padding:0 10px; 
+    margin-top:5px;
+    z-index: 20;
+  }
+
+  /* Responsividade */
+  @media (max-width:768px){
+    .menu button{padding:8px 12px;font-size:12px;}
+
+    .gif-esquerda img{
+      width: 20vw;     
+      max-width: 90px; 
+    }
+
+    .hero img.fundo{
+      max-width: 90%; /* largura menor no celular */
+    }
+  }
+</style>
+</head>
+<body>
+
+<!-- Menu -->
+<div class="menu">
+  <button class="btn-cadastro" onclick="abrirJanela('cadastro.html')">Cadastro de Produtos</button>
+  <button class="btn-entrada" onclick="abrirJanela('entrada.produtos.html')">Entrada de Produtos</button>
+  <button class="btn-saida" onclick="abrirJanela('saida.produtos.html')">Saída de Produtos</button>
+  <button class="btn-controle" onclick="abrirJanela('controle.estoque.html')">Controle de Estoque</button>
+</div>
+
+<!-- Hero -->
+<div class="hero">
+  <!-- Imagem de fundo -->
+  <img src="fundo_logistica.png" alt="Fundo Logística" class="fundo">
+  
+  <!-- GIF animado à esquerda -->
+  <div class="gif-esquerda">
+    <img src="3dgifmaker20388.gif" alt="Logo 3D animado">
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>Painel de Controle - Logística OZT / Developed by: William Jackes</footer>
+
+<script>
+function abrirJanela(arquivo){
+  const novaJanela = window.open(arquivo, "_blank");
+  if(novaJanela){ novaJanela.focus(); }
+  else{ alert("Permita pop-ups para abrir a página."); }
+}
+</script>
+
+</body>
+</html>

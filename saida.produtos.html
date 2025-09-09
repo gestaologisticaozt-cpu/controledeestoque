@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Saída de Produtos</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9fafb;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #199E80;
+      color: white;
+      padding: 12px 20px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      gap: 10px;
+    }
+    header h2 { margin: 0; flex: 1; }
+    header .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    header .actions button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 13px;
+      transition: 0.2s;
+    }
+    .btn-add { background-color:#16a34a; color:white; }
+    .btn-edit { background-color:#0ea5e9; color:white; }
+    .btn-delete { background-color:#b91c1c; color:white; }
+    .btn-clear { background-color:#2563eb; color:white; }
+    .btn-sair { background-color:#dc2626; color:white; }
+    header .actions button:hover { opacity: 0.9; }
+    .container { padding: 15px; }
+
+    #formGroup {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 12px;
+      background: #ecfdf5;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      align-items: end;
+    }
+    .form-item { display: flex; flex-direction: column; }
+    .form-item label {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 3px;
+      color: #374151;
+    }
+    .form-item input, .form-item select {
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+      background: white;
+    }
+    .form-item input[readonly] { background: #f3f4f6; }
+    #saidaCodigo { max-width: 90px; }
+    #saidaUnidade { max-width: 80px; }
+    #saidaLocacao { max-width: 80px; }
+    #saidaEstoqueMinimo { max-width: 100px; }
+    #saidaQuantidade { max-width: 110px; }
+    #saidaData { max-width: 130px; }
+
+    #searchGroup {
+      background: #d1fae5;
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    #searchGroup input {
+      flex: 1;
+      min-width: 200px;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    #searchGroup button {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      background: #16a34a;
+      color: white;
+      cursor: pointer;
+    }
+    #searchGroup button:hover { opacity: 0.9; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      font-size: 13px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      word-wrap: break-word;
+    }
+    th { background-color: #166534; color: white; }
+    tr:hover { background: #f0fdf4; cursor: pointer; }
+    th:nth-child(1), td:nth-child(1) { width: 80px; }
+    th:nth-child(2), td:nth-child(2) { width: 30%; }
+    th:nth-child(3), td:nth-child(3) { width: 90px; }
+    th:nth-child(4), td:nth-child(4) { width: 70px; }
+    th:nth-child(5), td:nth-child(5) { width: 120px; }
+    th:nth-child(6), td:nth-child(6) { width: 90px; }
+    th:nth-child(7), td:nth-child(7) { width: 110px; }
+    th:nth-child(8), td:nth-child(8) { width: 80px; }
+
+    @media (max-width: 768px) {
+      header { flex-direction: column; align-items: flex-start; }
+      header h2 { margin-bottom: 8px; }
+      .actions { width: 100%; justify-content: flex-start; }
+      #formGroup { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      #formGroup { grid-template-columns: 1fr; }
+      #searchGroup { flex-direction: column; align-items: stretch; }
+      #searchGroup input, #searchGroup button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h2>Saída de Produtos</h2>
+  <div class="actions">
+    <button class="btn-add" id="btnSaidaAdd">Adicionar</button>
+    <button class="btn-edit" id="btnSaidaEdit">Editar</button>
+    <button class="btn-delete" id="btnSaidaDelete">Excluir</button>
+    <button class="btn-clear" id="btnSaidaClear">Limpar</button>
+    <button class="btn-sair" onclick="window.location.href='index.html'">Sair</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="formGroup">
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Código:</label>
+      <input type="text" id="saidaCodigo" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 4;">
+      <label>Descrição:</label>
+      <select id="saidaDescricao" onchange="preencherDadosProdutoSaida()">
+        <option value="">Selecione um produto</option>
+      </select>
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Quantidade:</label>
+      <input type="number" id="saidaQuantidade" min="0" step="any">
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Unidade:</label>
+      <input type="text" id="saidaUnidade" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 2;">
+      <label>Categoria:</label>
+      <input type="text" id="saidaCategoria" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Estoque Mínimo:</label>
+      <input type="number" id="saidaEstoqueMinimo" readonly>
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Data Saída:</label>
+      <input type="date" id="saidaData">
+    </div>
+    <div class="form-item" style="grid-column: span 1;">
+      <label>Locação:</label>
+      <input type="text" id="saidaLocacao">
+    </div>
+  </div>
+
+  <div id="searchGroup">
+    <label>Pesquisar:</label>
+    <input type="text" id="saidaSearchInput" placeholder="Digite parte da descrição">
+    <button onclick="pesquisarSaida()">Pesquisar</button>
+    <button onclick="mostrarTodasSaidas()">Mostrar Todas</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Descrição</th>
+        <th>Qtd</th>
+        <th>Unid</th>
+        <th>Categoria</th>
+        <th>Est. Min</th>
+        <th>Data</th>
+        <th>Locação</th>
+      </tr>
+    </thead>
+    <tbody id="saidaTabelaCorpo"></tbody>
+  </table>
+</div>
+
+<script>
+let saidas = JSON.parse(localStorage.getItem("saidas")) || [];
+let modoEdicaoSaida = false;
+let editIndexSaida = null;
+document.getElementById("saidaData").valueAsDate = new Date();
+
+function getProdutos(){ return JSON.parse(localStorage.getItem("produtos")) || []; }
+function findProdutoByCodigo(codigo){ return getProdutos().find(p => p.codigo === codigo); }
+
+function carregarProdutosSaida(){
+  const select = document.getElementById("saidaDescricao");
+  const produtos = getProdutos();
+  select.innerHTML = '<option value="">Selecione um produto</option>';
+  produtos.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.codigo;
+    opt.textContent = `${p.descricao} (${p.codigo})`;
+    select.appendChild(opt);
+  });
+}
+function preencherDadosProdutoSaida(){
+  const codigo = document.getElementById("saidaDescricao").value;
+  const produto = findProdutoByCodigo(codigo);
+  document.getElementById("saidaCodigo").value = produto?.codigo || "";
+  document.getElementById("saidaUnidade").value = produto?.unidade || "";
+  document.getElementById("saidaCategoria").value = produto?.categoria || "";
+  document.getElementById("saidaEstoqueMinimo").value = produto?.estoqueMinimo ?? "";
+}
+
+function atualizarTabelaSaida(lista=null){
+  const tbody=document.getElementById("saidaTabelaCorpo");
+  tbody.innerHTML="";
+  (lista||saidas).forEach((p,i)=>{
+    const produtoAtual=findProdutoByCodigo(p.codigo);
+    const estoqueMin=produtoAtual?.estoqueMinimo ?? p.estoqueMinimo ?? "";
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${p.codigo}</td>
+      <td>${p.descricao}</td>
+      <td>${p.quantidade !== "" ? Number(p.quantidade).toLocaleString("pt-BR") : ""}</td>
+      <td>${p.unidade}</td>
+      <td>${p.categoria}</td>
+      <td>${estoqueMin !== "" ? Number(estoqueMin).toLocaleString("pt-BR") : ""}</td>
+      <td>${p.data}</td>
+      <td>${p.locacao||""}</td>`;
+    tr.onclick=()=>preencherCamposSaida(i);
+    tbody.appendChild(tr);
+  });
+}
+function salvarLocalStorageSaida(){ localStorage.setItem("saidas",JSON.stringify(saidas)); }
+
+function limparCamposSaida(){
+  document.querySelectorAll("#formGroup input, #formGroup select").forEach(e=>e.value="");
+  document.getElementById("saidaData").valueAsDate=new Date();
+  modoEdicaoSaida=false; editIndexSaida=null;
+}
+function adicionarSaida(){
+  const select=document.getElementById("saidaDescricao");
+  const codigo=document.getElementById("saidaCodigo").value.trim();
+  const descricao=select.options[select.selectedIndex]?.text.split(" (")[0]||"";
+  const quantidade=parseFloat(document.getElementById("saidaQuantidade").value.trim());
+  const unidade=document.getElementById("saidaUnidade").value;
+  const categoria=document.getElementById("saidaCategoria").value;
+  const estoqueMinimo=parseFloat(document.getElementById("saidaEstoqueMinimo").value);
+  const data=document.getElementById("saidaData").value;
+  const locacao=document.getElementById("saidaLocacao").value;
+  if(!codigo||!descricao||isNaN(quantidade)){alert("Preencha todos os campos!");return;}
+  const registro={codigo,descricao,quantidade,unidade,categoria,estoqueMinimo,data,locacao};
+  if(modoEdicaoSaida){ saidas[editIndexSaida]=registro; }
+  else{ saidas.push(registro); }
+  salvarLocalStorageSaida(); atualizarTabelaSaida(); limparCamposSaida();
+}
+function preencherCamposSaida(i){
+  const p=saidas[i];
+  document.getElementById("saidaCodigo").value=p.codigo;
+  document.getElementById("saidaDescricao").value=p.codigo;
+  document.getElementById("saidaQuantidade").value=p.quantidade;
+  document.getElementById("saidaUnidade").value=p.unidade;
+  document.getElementById("saidaCategoria").value=p.categoria;
+  document.getElementById("saidaEstoqueMinimo").value=p.estoqueMinimo;
+  document.getElementById("saidaData").value=p.data;
+  document.getElementById("saidaLocacao").value=p.locacao||"";
+  modoEdicaoSaida=true; editIndexSaida=i;
+}
+function excluirSaida(){
+  if(modoEdicaoSaida&&editIndexSaida!==null){
+    saidas.splice(editIndexSaida,1);
+    salvarLocalStorageSaida(); atualizarTabelaSaida(); limparCamposSaida();
+  }else alert("Selecione um registro para excluir!");
+}
+function pesquisarSaida(){
+  const termo=document.getElementById("saidaSearchInput").value.toLowerCase();
+  const filtradas=saidas.filter(p=>p.descricao.toLowerCase().includes(termo));
+  atualizarTabelaSaida(filtradas);
+}
+function mostrarTodasSaidas(){ atualizarTabelaSaida(); }
+
+document.getElementById("btnSaidaAdd").onclick=adicionarSaida;
+document.getElementById("btnSaidaClear").onclick=limparCamposSaida;
+document.getElementById("btnSaidaDelete").onclick=excluirSaida;
+
+window.onload=()=>{ carregarProdutosSaida(); atualizarTabelaSaida(); };
+</script>
+</body>
+</html>
